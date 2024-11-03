@@ -1,0 +1,10 @@
+numpy
+matplotlib
+pandas
+scikit-learn
+torch
+transformers
+openpyxl
+tqdm
+ollama
+python-dotenv
