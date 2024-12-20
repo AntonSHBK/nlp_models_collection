@@ -1,18 +1,20 @@
 import os
 from pathlib import Path
-
+from abc import ABC, abstractmethod
 from dotenv import load_dotenv
 from PIL import Image
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+from transformers import AutoTokenizer, AutoModel, pipeline
 import torch
 
 
 load_dotenv()
 
 
-class ModelLoader:
-    def __init__(self, model_name=None, cache_dir="./data/cache", use_gpu=True, hf_token=None):
-
+class ModelLoader(ABC):
+    """
+    Абстрактный базовый класс для загрузки моделей с Hugging Face.
+    """
+    def __init__(self, model_name, cache_dir="./data/cache", use_gpu=True, hf_token=None):
         if not model_name:
             raise ValueError("Не указано название модели model_name")
 
@@ -22,38 +24,38 @@ class ModelLoader:
 
         self.hf_token = hf_token or os.getenv("HF_TOKEN")
         if not self.hf_token:
-            raise ValueError("Необходимо указать токен доступа Hugging Face (hf_token) либо через аргументы, либо в .env")      
-          
+            raise ValueError("Необходимо указать токен доступа Hugging Face (hf_token).")
+
         self.device = "cuda" if torch.cuda.is_available() and self.use_gpu else "cpu"
 
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        
+
         self.model = None
         self.tokenizer = None
         self.pipeline = None
         self._load_model()
 
     def _load_model(self):
-        """Загружает модель с учетом кэширования и устройства."""
+        """Загружает модель."""
         try:
-            # Загружаем модель с использованием токена для аутентификации
-            self.model = AutoModelForCausalLM.from_pretrained(
+            self.model = AutoModel.from_pretrained(
                 self.model_name, cache_dir=self.cache_dir, use_auth_token=self.hf_token
             ).to(self.device)
             print(f"Модель {self.model_name} загружена на устройство {self.device}")
-
             self._load_tokenizer()
             self._load_pipeline()
         except Exception as e:
-            print(f"Ошибка при загрузке модели: {e}")
+            raise RuntimeError(f"Ошибка при загрузке модели {self.model_name}: {e}")
 
+    @abstractmethod
     def _load_tokenizer(self):
-        """Заглушка для загрузки токенайзера."""
-        print("Функция _load_tokenizer не определена.")
+        """Абстрактный метод для загрузки токенайзера."""
+        pass
 
+    @abstractmethod
     def _load_pipeline(self):
-        """Заглушка для загрузки пайплайна."""
-        print("Функция _load_pipeline не определена.")
+        """Абстрактный метод для загрузки пайплайна."""
+        pass
 
 
 class TextGenerationModelLoader(ModelLoader):
@@ -74,21 +76,16 @@ class TextGenerationModelLoader(ModelLoader):
     - use_gpu (bool): Если True, использует GPU при наличии.
     - hf_token (str): Токен для доступа к Hugging Face.
     """
-    def __init__(self, model_name, cache_dir="./data/cache", use_gpu=True, hf_token=None):
-        super().__init__(model_name=model_name, cache_dir=cache_dir, use_gpu=use_gpu, hf_token=hf_token)
-
     def _load_tokenizer(self):
-        """Загружает токенайзер для модели генерации текста."""
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_name, cache_dir=self.cache_dir, use_auth_token=self.hf_token
             )
             print(f"Токенайзер для {self.model_name} успешно загружен.")
         except Exception as e:
-            print(f"Ошибка при загрузке токенайзера: {e}")
+            raise RuntimeError(f"Ошибка при загрузке токенайзера: {e}")
 
     def _load_pipeline(self):
-        """Инициализирует пайплайн для генерации текста."""
         try:
             self.pipeline = pipeline(
                 "text-generation",
@@ -98,14 +95,11 @@ class TextGenerationModelLoader(ModelLoader):
             )
             print(f"Пайплайн для {self.model_name} успешно инициализирован.")
         except Exception as e:
-            print(f"Ошибка при инициализации пайплайна: {e}")
+            raise RuntimeError(f"Ошибка при инициализации пайплайна: {e}")
 
     def generate_text(self, prompt, max_length=100):
-        """Генерирует текст на основе входного промпта."""
         if not self.pipeline:
             raise ValueError("Пайплайн не инициализирован.")
-        
-        # Генерация текста
         output = self.pipeline(prompt, max_length=max_length, num_return_sequences=1)
         return output[0]["generated_text"]
 
@@ -125,31 +119,24 @@ class ImageToTextModelLoader(ModelLoader):
     - use_gpu (bool): Если True, использует GPU при наличии.
     - hf_token (str): Токен для доступа к Hugging Face.
     """
-    def __init__(self, model_name, cache_dir="./data/cache", use_gpu=True, hf_token=None):
-        super().__init__(model_name=model_name, cache_dir=cache_dir, use_gpu=use_gpu, hf_token=hf_token)
+    def _load_tokenizer(self):
+        pass  # Не всегда требуется для image-to-text
 
     def _load_pipeline(self):
-        """Инициализирует пайплайн для задачи 'image-to-text'."""
         try:
             self.pipeline = pipeline(
                 "image-to-text",
                 model=self.model,
-                tokenizer=self.tokenizer,
                 device=0 if self.device == "cuda" else -1
             )
-            print(f"Пайплайн для {self.model_name} успешно инициализирован для задачи 'image-to-text'.")
+            print(f"Пайплайн для {self.model_name} успешно инициализирован для image-to-text.")
         except Exception as e:
-            print(f"Ошибка при инициализации пайплайна: {e}")
+            raise RuntimeError(f"Ошибка при инициализации пайплайна: {e}")
 
     def generate_image_description(self, image_path):
-        """Генерирует текстовое описание для изображения."""
-        if not self.pipeline:
-            raise ValueError("Пайплайн не инициализирован.")
-        
-        # Загрузка изображения
+        if not Path(image_path).exists():
+            raise FileNotFoundError(f"Изображение не найдено: {image_path}")
         image = Image.open(image_path)
-        
-        # Генерация описания
         output = self.pipeline(image)
         return output[0]["generated_text"]
 
@@ -169,31 +156,24 @@ class VQAModelLoader(ModelLoader):
     - use_gpu (bool): Если True, использует GPU при наличии.
     - hf_token (str): Токен для доступа к Hugging Face.
     """
-    def __init__(self, model_name, cache_dir="./data/cache", use_gpu=True, hf_token=None):
-        super().__init__(model_name=model_name, cache_dir=cache_dir, use_gpu=use_gpu, hf_token=hf_token)
+    def _load_tokenizer(self):
+        pass  # Не всегда требуется для VQA
 
     def _load_pipeline(self):
-        """Инициализирует пайплайн для задачи 'visual question answering'."""
         try:
             self.pipeline = pipeline(
                 "vqa",
                 model=self.model,
-                tokenizer=self.tokenizer,
                 device=0 if self.device == "cuda" else -1
             )
-            print(f"Пайплайн для {self.model_name} успешно инициализирован для задачи 'visual question answering'.")
+            print(f"Пайплайн для {self.model_name} успешно инициализирован для VQA.")
         except Exception as e:
-            print(f"Ошибка при инициализации пайплайна: {e}")
+            raise RuntimeError(f"Ошибка при инициализации пайплайна: {e}")
 
     def answer_question(self, image_path, question):
-        """Отвечает на вопрос по изображению."""
-        if not self.pipeline:
-            raise ValueError("Пайплайн не инициализирован.")
-        
-        # Загрузка изображения
+        if not Path(image_path).exists():
+            raise FileNotFoundError(f"Изображение не найдено: {image_path}")
         image = Image.open(image_path)
-        
-        # Генерация ответа на вопрос
         output = self.pipeline(image, question)
         return output[0]["generated_text"]
 
