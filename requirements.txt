@@ -1,10 +1,52 @@
+# Основные библиотеки для работы с ML/NLP
 numpy
 matplotlib
 pandas
 scikit-learn
 torch
+torchaudio
 transformers
 openpyxl
 tqdm
 ollama
 python-dotenv
+
+# FastAPI и сервер Uvicorn
+fastapi==0.110.0
+uvicorn==0.27.1
+
+# Hugging Face и модели (Whisper, Donut, другие)
+datasets
+# sentencepiece
+# protobuf
+# accelerate
+# bitsandbytes
+# peft
+# diffusers
+
+# Обработка аудио и видео
+ffmpeg-python==0.2.0
+soundfile==0.12.1
+# librosa
+
+# Обработка изображений и документов (OCR, PDF)
+Pillow
+pdfplumber
+# PyMuPDF
+# opencv-python-headless
+
+# Логирование и обработка ошибок
+loguru==0.7.2
+
+# Тестирование API и моделей
+pytest==8.0.2
+httpx==0.27.0
+python-multipart
+
+# Интерактивные визуализации и работа с API
+# plotly
+# requests
+
+# Асинхронная обработка задач
+# celery
+# redis

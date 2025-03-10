@@ -14,25 +14,31 @@ class ModelLoader(ABC):
     """
     Абстрактный базовый класс для загрузки моделей с Hugging Face.
     """
-    def __init__(self, model_name, cache_dir="./data/cache", use_gpu=True, hf_token=None):
+    def __init__(
+        self, model_name: str, 
+        cache_dir: Path = 'cache_dir', 
+        device: str = None,
+        hf_token: str = None,
+        **kwargs
+    ):
         if not model_name:
             raise ValueError("Не указано название модели model_name")
 
         self.model_name = model_name
         self.cache_dir = Path(cache_dir)
-        self.use_gpu = use_gpu
+        device = device or kwargs.get("device", "cuda" if torch.cuda.is_available() else "cpu")
 
         self.hf_token = hf_token or os.getenv("HF_TOKEN")
         if not self.hf_token:
             raise ValueError("Необходимо указать токен доступа Hugging Face (hf_token).")
-
-        self.device = "cuda" if torch.cuda.is_available() and self.use_gpu else "cpu"
 
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         self.model = None
         self.tokenizer = None
         self.pipeline = None
+        self.processor = None
+        
         self._load_model()
 
     def _load_model(self):
@@ -44,6 +50,7 @@ class ModelLoader(ABC):
             print(f"Модель {self.model_name} загружена на устройство {self.device}")
             self._load_tokenizer()
             self._load_pipeline()
+            self._load_processore()
         except Exception as e:
             raise RuntimeError(f"Ошибка при загрузке модели {self.model_name}: {e}")
 
@@ -55,6 +62,11 @@ class ModelLoader(ABC):
     @abstractmethod
     def _load_pipeline(self):
         """Абстрактный метод для загрузки пайплайна."""
+        pass
+    
+    @abstractmethod
+    def _load_processore(self):
+        """Абстрактный метод для загрузки процессора."""
         pass
 
 
