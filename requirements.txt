@@ -32,6 +32,7 @@ soundfile==0.12.1
 # Обработка изображений и документов (OCR, PDF)
 Pillow
 pdfplumber
+pytesseract
 # PyMuPDF
 # opencv-python-headless
 
