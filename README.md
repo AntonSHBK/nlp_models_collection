@@ -1,71 +1,43 @@
-# Text and Multimodal Model Loader
-<!-- 
-## Описание
 
-Этот проект предоставляет универсальные классы для загрузки и использования моделей генерации текста и мультимодальных моделей, таких как **Llama**, **GIT**, **T5**, **BERT-based generators**, и **BLIP**. Классы используют библиотеку [Hugging Face Transformers](https://huggingface.co/docs/transformers/index) и поддерживают задачи генерации текста, описания изображений, визуально-вопросно-ответные системы (VQA) и многое другое.
+Это небольшая персональная библиотека, созданная для удобной работы с моделями Hugging Face.  
+Она предоставляет унифицированный интерфейс для загрузки, использования и расширения NLP, CV и мультимодальных моделей.
 
-## Требования
-
-- Python 3.7+
-- [Hugging Face Transformers](https://huggingface.co/docs/transformers/installation)
-- [Torch](https://pytorch.org/get-started/locally/)
-- [dotenv](https://pypi.org/project/python-dotenv/) для работы с переменными окружения
-
-## Установка
-
-1. Клонируйте репозиторий и перейдите в его директорию:
-   ```bash
-   git clone https://github.com/AntonSHBK/multimodal_nlp_models.git
-   cd multimodal_nlp_models
-   ```
-
-2. Установите зависимости:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Создайте файл `.env` в корневой директории и добавьте токен Hugging Face:
-   ```plaintext
-   HF_TOKEN=your_huggingface_token_here
-   ```
+> Это мой персональный набор обёрток для моделей. Проект открыт для изменений, дополнений и экспериментов под собственные задачи.
 
 ---
 
-## Документация
+## Возможности
 
-### Описание моделей и классов
+- Поддержка моделей различных типов:
+  - Text-to-text (T5, FLAN, BART)
+  - Causal LM (GPT, DeepSeek, LLaMA)
+  - Классификация текста
+  - Эмбеддинги текста
+  - Классификация изображений
+  - Подписи к изображениям (image captioning)
+  - Мультимодальные модели (text + image → answer)
 
-Подробное описание классов и инструкцию по их использованию можно найти в [docs/model_loaders_documentation.md](./docs/model_loaders_documentation.md).
 
-### Сравнительный анализ мультимодальных моделей
+## Пример использования
 
-Сравнительный анализ моделей и их применимость для различных задач доступен в файле [docs/multimodal_model.md](./docs/multimodal_model.md).
+```python
+from nlp_models_collection.models import TextToTextModelLoader
+
+model = TextToTextModelLoader("google/flan-t5-small")
+output = model.generate("Translate English to French: How are you?")
+print(output[0])
+```
 
 ---
 
-## Описание классов
+## Структура проекта
 
-Все классы находятся в файле `base_model.py`:
-
-### `TextGenerationModelLoader`
-
-Класс для загрузки любой модели генерации текста. Поддерживаемые модели:
-- GPT-2, GPT-3
-- BLOOM
-- Meta Llama (например, `meta-llama/Llama-3.1-8B-Instruct`)
-- T5 (например, `t5-base`)
-- BERT-based generators (например, `google/bert2bert_L-24_wmt_de_en`)
-
-### `ImageToTextModelLoader`
-
-Класс для загрузки моделей, поддерживающих задачу `image-to-text` (генерация описания изображения). Поддерживаемые модели:
-- Meta Llama Vision (например, `meta-llama/Llama-3.2-11B-Vision-Instruct`)
-- BLIP
-- GIT (например, `microsoft/git-base`)
-
-### `VQAModelLoader`
-
-Класс для загрузки моделей, поддерживающих визуально-вопросно-ответные задачи (VQA). Поддерживаемые модели:
-- Meta Llama Vision (например, `meta-llama/Llama-3.2-11B-Vision-Instruct`)
-- BLIP
-- OFA -->
+```
+nlp_models_collection/
+│
+├── models/               # Все загрузчики моделей (текст, изображения, мультимодальность)
+├── utils/                # Утилиты: работа с устройствами, загрузка с HF, логирование
+├── data/                 # Кэш, примеры, входные данные (локально, не отслеживается)
+├── notebooks/            # Jupyter-ноутбуки для экспериментов
+├── example/              # Примеры скриптов
+```
